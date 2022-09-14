@@ -80,9 +80,7 @@ function getImportStr(upper, component) {
 
 function insertComponentToIndex(component, indexPath) {
     const upper = getFirstLetterUpper(component);
-    // last import line pattern
     const importPattern = /import.*?;(?=\n\n)/;
-    // components pattern
     const cmpPattern = /(?<=const components = {\n)[.|\s|\S]*?(?=};\n)/g;
     const importPath = getImportStr(upper, component);
     const desc = '> insert component into index.ts';
@@ -91,7 +89,6 @@ function insertComponentToIndex(component, indexPath) {
         console.log(`there is already ${component} in /src/index.ts`, 'notice');
         return;
     }
-    // insert component at last import and component lines.
     data = data.replace(importPattern, (a) => `${a}\n${importPath}`).replace(cmpPattern, (a) => `${a}  ${upper},\n`);
     // TODO:
     console.log(data, '============')
