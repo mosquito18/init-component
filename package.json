@@ -1,0 +1,23 @@
+{
+  "name": "init-component",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "init": "node script/init",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mosquito18/init-component.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mosquito18/init-component/issues"
+  },
+  "homepage": "https://github.com/mosquito18/init-component#readme",
+  "dependencies": {
+    "lodash": "^4.17.21"
+  }
+}
