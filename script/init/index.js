@@ -6,16 +6,42 @@ const path = require('path');
 // 获取当前项目的工作目录（相当于根目录）
 const cwdPath = process.cwd();
 
+// 执行单元测试的时候生成测试的快照文件 snapshots
 function getSnapshotFiles(component) {
     return {
-        // [`test/unit/${component}/__snapshots__/`]: {
-        //     desc: 'snapshot test',
-        //     files: ['index.test.js.snap', 'demo.test.js.snap'],
-        // },
+        [`test/unit/${component}/__snapshots__/`]: {
+            desc: 'snapshot test',
+            files: ['index.test.js.snap', 'demo.test.js.snap'],
+        },
     };
 }
 
+function deleteFolderRecursive(path) {
+    // 先判断路径是否存在
+    if (fs.existsSync(path)) {
+        // 路径存在则读取path路径下的所有文件，进行循环
+        fs.readdirSync(path).forEach((file) => {
+            const current = `${path}/${file}`;
+            // 如果current是一个路径目录则进行递归调用
+            if (fs.statSync(current).isDirectory()) {
+                deleteFolderRecursive(current);
+            } else {
+                // 如果是个文件则删除即可
+                fs.unlinkSync(current);
+            }
+        });
+        // 上面文件删除了，再进行目录的删除
+        fs.rmdirSync(path);
+    }
+}
+
 function deleteComponent(toBeCreatedFiles, component) {
+    const snapShotFiles = getSnapshotFiles(component);
+    const files = Object.assign(toBeCreatedFiles, snapShotFiles);
+
+    Object.keys(files).forEach((dir) => {
+        deleteFolderRecursive(dir);
+    });
     console.log('All radio files have been removed.', 'success');
 }
 
@@ -78,8 +104,30 @@ function getImportStr(upper, component) {
     return `import ${upper} from './${component}';`;
 }
 
+function deleteComponentFromIndex(component, indexPath) {
+    const upper = getFirstLetterUpper(component);
+    const importStr = `${getImportStr(upper, component)}\n`;
+    let data = fs.readFileSync(indexPath).toString();
+    data = data.replace(new RegExp(importStr), () => '').replace(new RegExp(`  ${upper},\n`), '');
+    fs.writeFile(indexPath, data, (err) => {
+        if (err) {
+            console.log(err, 'error');
+        } else {
+            console.log(`${component} has been removed from /src/index.ts`, 'success');
+        }
+    });
+}
+
 function insertComponentToIndex(component, indexPath) {
     const upper = getFirstLetterUpper(component);
+    /**
+     * . 匹配除换行符（\n、\r）之外的任何单个字符
+     * ? 问号代表前面的字符最多只可以出现一次（0次或1次）
+     * ( ) 标记一个子表达式的开始和结束位置。
+     * '\n' 匹配换行符
+     * 
+     * .* 匹配*字符
+     */
     const importPattern = /import.*?;(?=\n\n)/;
     const cmpPattern = /(?<=const components = {\n)[.|\s|\S]*?(?=};\n)/g;
     const importPath = getImportStr(upper, component);
@@ -90,8 +138,7 @@ function insertComponentToIndex(component, indexPath) {
         return;
     }
     data = data.replace(importPattern, (a) => `${a}\n${importPath}`).replace(cmpPattern, (a) => `${a}  ${upper},\n`);
-    // TODO:
-    console.log(data, '============')
+
     fs.writeFile(indexPath, data, (err) => {
         if (err) {
             console.log(err, 'error');
@@ -126,8 +173,8 @@ function init() {
     const toBeCreatedFiles = config.getToBeCreatedFiles(component);
 
     if (isDeleted === 'del') {
-        // deleteComponent(toBeCreatedFiles, component);
-        // deleteComponentFromIndex(component, indexPath);
+        deleteComponent(toBeCreatedFiles, component);
+        deleteComponentFromIndex(component, indexPath);
     } else {
         addComponent(toBeCreatedFiles, component);
         insertComponentToIndex(component, indexPath);
